@@ -1,6 +1,7 @@
 import numpy as np
 from spharpy.samplings.helpers import sph2cart
 from scipy.spatial import cKDTree
+import pyfar
 
 
 class Coordinates(object):
@@ -206,7 +207,6 @@ class Coordinates(object):
         """Return number of points stored in the object"""
         return self.x.size
 
-
     def merge(self, other):
         """Merge another coordinates objects into this object."""
         data = np.concatenate(
@@ -214,7 +214,6 @@ class Coordinates(object):
             axis=-1
         )
         self.cartesian = data
-
 
     def find_nearest_point(self, point):
         """Find the closest Coordinate point to a given Point.
@@ -265,6 +264,22 @@ class Coordinates(object):
         """Length of the object which is the number of points stored.
         """
         return self.n_points
+
+    def to_pyfar(self):
+        """Export to a pyfar Coordinates object.
+
+        Returns
+        -------
+        pyfar.Coordinates
+            The equivalent pyfar class object.
+        """
+        return pyfar.Coordinates(
+            self.x,
+            self.y,
+            self.z,
+            domain='cart',
+            convention='right',
+            unit='met')
 
 
 class SamplingSphere(Coordinates):
@@ -343,8 +358,8 @@ class SamplingSphere(Coordinates):
         return SamplingSphere(x, y, z, n_max, weights)
 
     @classmethod
-    def from_spherical(cls, radius, elevation, azimuth,
-            n_max=None, weights=None):
+    def from_spherical(
+            cls, radius, elevation, azimuth, n_max=None, weights=None):
         """Create a Coordinates class object from a set of points in the
         spherical coordinate system.
 
@@ -363,10 +378,10 @@ class SamplingSphere(Coordinates):
         x, y, z = sph2cart(radius, elevation, azimuth)
         return SamplingSphere(x, y, z, n_max, weights)
 
-
     @classmethod
-    def from_array(cls, values, n_max=None, weights=None,
-            coordinate_system='cartesian'):
+    def from_array(
+            cls, values, n_max=None,
+            weights=None, coordinate_system='cartesian'):
         """Create a Coordinates class object from a set of points given as
         numpy array
 
@@ -388,7 +403,6 @@ class SamplingSphere(Coordinates):
 
         return coords
 
-
     def __repr__(self):
         """repr for SamplingSphere class
         """
@@ -397,3 +411,18 @@ class SamplingSphere(Coordinates):
         else:
             repr_string = "Sampling with {} points".format(self.n_points)
         return repr_string
+
+    def to_pyfar(self):
+
+        """Export to a pyfar Coordinates object.
+
+        Returns
+        -------
+        pyfar.Coordinates
+            The equivalent pyfar class object.
+        """
+        pyfar_coords = super().to_pyfar()
+        pyfar_coords.weights = self.weights / np.linalg.norm(self.weights)
+        pyfar_coords.sh_order = self.n_max
+
+        return pyfar_coords

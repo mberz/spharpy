@@ -19,3 +19,4 @@ pytest-runner
 numpydoc
 insipid-sphinx-theme
 autodocsumm
+pyfar
